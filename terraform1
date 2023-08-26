@@ -1,0 +1,67 @@
+provider "aws" {
+  region = "eu-north-1"  
+}
+
+resource "aws_instance" "elk-monitoring" {
+  ami           = " ami-043dedf0ea998a5c7"
+  instance_type = "t3.micro"
+  key_name      = "tenariaz-key2"
+  vpc_security_group_ids = [sg-005352c85275fd50d] 
+  user_data = <<-EOF
+              #!/bin/bash
+              apt update -y
+              apt install -y docker.io 
+              systemctl enable docker
+              systemctl start docker
+              sudo apt-get install -y docker-compose
+              mkdir docker
+              cd docker/
+              git clone https://github.com/caas/docker-elk.git
+              cd docker-elk/
+              docker-compose up -d
+              EOF
+
+  tags = {
+    Name = "elk-monitoring"
+      Environment = "Production"
+    }
+  }
+
+resource "aws_security_group" "elk-monitoring" {
+  name_prefix = "elk-monitoring"
+  
+  ingress {
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+   ingress {
+    from_port   = 9200
+    to_port     = 9200
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+   ingress {
+    from_port   = 9300
+    to_port     = 9300
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+   ingress {
+    from_port   = 5601
+    to_port     = 5601
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
